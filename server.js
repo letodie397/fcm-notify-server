@@ -1,11 +1,10 @@
-require('dotenv').config(); // 🔐 Carrega variáveis do .env
+require('dotenv').config();
 const express = require('express');
 const admin = require('firebase-admin');
 const bodyParser = require('body-parser');
 
 const app = express();
 
-// 🔑 Inicializa Firebase Admin com a chave do .env
 admin.initializeApp({
   credential: admin.credential.cert(require(process.env.GOOGLE_APPLICATION_CREDENTIALS)),
   databaseURL: 'https://appteste-dc435-default-rtdb.firebaseio.com/',
@@ -13,7 +12,6 @@ admin.initializeApp({
 
 app.use(bodyParser.json());
 
-// 🔔 Endpoint para inscrever token no tópico "todos"
 app.post('/inscrever-no-topico', (req, res) => {
   const token = req.body.token;
 
@@ -28,7 +26,6 @@ app.post('/inscrever-no-topico', (req, res) => {
     });
 });
 
-// 🔁 Monitoramento do Firebase Realtime Database
 const db = admin.database();
 const churchesRef = db.ref('churches');
 
@@ -38,7 +35,10 @@ churchesRef.on('value', (snapshot) => {
   const data = snapshot.val() || {};
 
   for (const [id, igreja] of Object.entries(data)) {
-    if (!knownChurches[id]) {
+    const anterior = knownChurches[id];
+
+    // Nova igreja
+    if (!anterior) {
       console.log('📌 Igreja adicionada:', igreja);
 
       admin.messaging().send({
@@ -54,18 +54,20 @@ churchesRef.on('value', (snapshot) => {
       .catch(error => {
         console.error('❌ Erro ao enviar notificação:', error);
       });
-    } else {
-      const statusAntes = knownChurches[id].autorizadofilippi;
-      const statusDepois = igreja.autorizadofilippi;
+    }
 
-      if (statusAntes !== statusDepois) {
-        console.log(`🔄 Igreja alterada: ${igreja.nome}`);
-        console.log(`🔸 De: ${statusAntes} → Para: ${statusDepois}`);
+    // Mudança no autorizadoFilippi (F maiúsculo!)
+    else {
+      const antes = anterior.autorizadoFilippi || '';
+      const depois = igreja.autorizadoFilippi || '';
+
+      if (antes !== depois) {
+        console.log(`🔄 Status de "${igreja.nome}" mudou de "${antes}" para "${depois}"`);
 
         let msg = '';
-        if (statusDepois === 'AUTORIZADO') {
+        if (depois === 'AUTORIZADO') {
           msg = 'Uma igreja foi AUTORIZADA!';
-        } else if (statusDepois === 'NEGADA') {
+        } else if (depois === 'NEGADA') {
           msg = 'Uma igreja foi NEGADA!';
         }
 
@@ -86,10 +88,9 @@ churchesRef.on('value', (snapshot) => {
         }
       }
     }
-
-    // 🆕 Atualiza a referência da igreja após processar
-    knownChurches[id] = igreja;
   }
+
+  knownChurches = data;
 });
 
 const PORT = process.env.PORT || 3000;
