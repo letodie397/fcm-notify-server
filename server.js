@@ -59,7 +59,8 @@ churchesRef.on('value', (snapshot) => {
       const statusDepois = igreja.autorizadofilippi;
 
       if (statusAntes !== statusDepois) {
-        console.log('🔄 Igreja alterada:', igreja.nome);
+        console.log(`🔄 Igreja alterada: ${igreja.nome}`);
+        console.log(`🔸 De: ${statusAntes} → Para: ${statusDepois}`);
 
         let msg = '';
         if (statusDepois === 'AUTORIZADO') {
@@ -85,9 +86,10 @@ churchesRef.on('value', (snapshot) => {
         }
       }
     }
-  }
 
-  knownChurches = data;
+    // 🆕 Atualiza a referência da igreja após processar
+    knownChurches[id] = igreja;
+  }
 });
 
 const PORT = process.env.PORT || 3000;
