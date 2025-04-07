@@ -1,11 +1,13 @@
+require('dotenv').config(); // 🔐 Carrega variáveis do .env
 const express = require('express');
 const admin = require('firebase-admin');
 const bodyParser = require('body-parser');
-const serviceAccount = require('./appteste-dc435-firebase-adminsdk-fbsvc-c8919342b5.json');
+
 const app = express();
 
+// 🔑 Inicializa Firebase Admin com a chave do .env
 admin.initializeApp({
-  credential: admin.credential.cert(serviceAccount),
+  credential: admin.credential.cert(require(process.env.GOOGLE_APPLICATION_CREDENTIALS)),
   databaseURL: 'https://appteste-dc435-default-rtdb.firebaseio.com/',
 });
 
@@ -35,7 +37,6 @@ let knownChurches = {};
 churchesRef.on('value', (snapshot) => {
   const data = snapshot.val() || {};
 
-  // Detectar novas igrejas
   for (const [id, igreja] of Object.entries(data)) {
     if (!knownChurches[id]) {
       console.log('📌 Igreja adicionada:', igreja);
@@ -54,7 +55,6 @@ churchesRef.on('value', (snapshot) => {
         console.error('❌ Erro ao enviar notificação:', error);
       });
     } else {
-      // Verifica se o status foi alterado
       const statusAntes = knownChurches[id].autorizadofilippi;
       const statusDepois = igreja.autorizadofilippi;
 
