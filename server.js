@@ -5,6 +5,7 @@ const bodyParser = require('body-parser');
 
 const app = express();
 
+// Inicializa o Firebase Admin SDK
 admin.initializeApp({
   credential: admin.credential.cert(require(process.env.GOOGLE_APPLICATION_CREDENTIALS)),
   databaseURL: 'https://appteste-dc435-default-rtdb.firebaseio.com/',
@@ -12,6 +13,7 @@ admin.initializeApp({
 
 app.use(bodyParser.json());
 
+// Endpoint para inscrever token no tópico "todos"
 app.post('/inscrever-no-topico', (req, res) => {
   const token = req.body.token;
 
@@ -31,6 +33,7 @@ const churchesRef = db.ref('churches');
 
 let knownChurches = {};
 
+// Observa mudanças no Firebase Realtime Database
 churchesRef.on('value', (snapshot) => {
   const data = snapshot.val() || {};
 
@@ -47,6 +50,11 @@ churchesRef.on('value', (snapshot) => {
           title: 'Nova Igreja!',
           body: 'Uma igreja nova foi adicionada!',
         },
+        data: {
+          tipo: 'nova_igreja',
+          igrejaId: id || '',
+          nome: igreja.nome || ''
+        }
       })
       .then(response => {
         console.log('✅ Notificação enviada:', response);
@@ -56,7 +64,7 @@ churchesRef.on('value', (snapshot) => {
       });
     }
 
-    // Mudança no autorizadoFilippi (F maiúsculo!)
+    // Mudança no autorizadoFilippi
     else {
       const antes = anterior.autorizadoFilippi || '';
       const depois = igreja.autorizadoFilippi || '';
@@ -78,6 +86,12 @@ churchesRef.on('value', (snapshot) => {
               title: 'Status Atualizado!',
               body: msg,
             },
+            data: {
+              tipo: 'status_atualizado',
+              status: depois,
+              igrejaId: id || '',
+              nome: igreja.nome || ''
+            }
           })
           .then(response => {
             console.log('✅ Notificação enviada:', response);
